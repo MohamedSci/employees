@@ -1,12 +1,11 @@
 
 import 'package:company_employees0/Model/emp_model.dart';
 import 'package:company_employees0/api/employee_api.dart';
-import 'package:company_employees0/notifier/auth_notifier.dart';
-import 'package:company_employees0/notifier/employee_notifier.dart';
-import 'package:company_employees0/screens/employee_screen.dart';
+import 'package:company_employees0/api/states.dart';
+import 'package:company_employees0/screens/detail.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 
 class EmployeeList extends StatefulWidget {
@@ -30,78 +29,92 @@ String defultImg =  'https://www.google.com.eg/url?sa=i&url=https%3A%2F%2Fwww.ve
 
   @override
   void initState() {
-    EmployeeNotifier employeeNotifier =
-    Provider.of<EmployeeNotifier>(context , listen: false);
-    getEmployees(employeeNotifier);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    AuthNotifier authNotifier = Provider.of<AuthNotifier>(context);
-    EmployeeNotifier employeeNotifier = Provider.of<EmployeeNotifier>(context);
-
-    _onEmployeeDeleted(Employee employee) {
-      Navigator.pop(context);
-      employeeNotifier.deleteEmployee(employee);
-    }
-    deleteEmployee(employeeNotifier.currentEmployee, _onEmployeeDeleted);
-
     Future<void> _refreshList() async {
-      getEmployees(employeeNotifier);
+      Apis.get(context).getEmployees();
     }
 
-    return
-       RefreshIndicator(
-        child: ListView.separated(
-            itemCount: employeeNotifier.employeeList.length,
-          itemBuilder: (BuildContext context, int index) {
-            return Dismissible(
-                key: Key("employee"),
-                onDismissed: (direction) {
-                  employeeNotifier.deleteEmployee(employeeNotifier.currentEmployee);
-                  setState(() {
-                    employeeNotifier.employeeList.removeAt(index);
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('one employee dismissed')));
-                },
-                background: Container(color: Colors.red),
-            child:  GestureDetector(child:
-               Row(children: [
-                Expanded(child: CircleAvatar(backgroundImage: NetworkImage(
-              employeeNotifier.employeeList[index].imageFile ?? defultImg,
-              ),radius: 60,
-              )
-              ),
-                Expanded(
-                    child: Column(mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                Text('${employeeNotifier.employeeList[index].fn} ${employeeNotifier.employeeList[index].ln}') ,
-                  Text('Hired at: ${employeeNotifier.employeeList[index].hd}'),
-                  Text('Work in: ${employeeNotifier.employeeList[index].de}'),
-                  Text('Gain :${employeeNotifier.employeeList[index].sa}'),
-                ],))
-              ],),
-                onLongPress: () {
-                  employeeNotifier.currentEmployee =
-                  employeeNotifier.employeeList[index];
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (BuildContext context) {
-                        return EmployeeScreen(isUpdating: true,);
-                      }
-                  ));
-                }
-            ));},
-            separatorBuilder: (BuildContext context, int index) {
-            return const Divider(
-            color: Colors.black );
+    return BlocConsumer<Apis, ChangeState>(
+    listener: (context, state) {
+    print(state);
+    },
+    builder: (context, state) {
+      print(state);
+      print(" bloc Consumer works");
+
+      return Expanded(
+          child: RefreshIndicator(
+
+            child: FutureBuilder<List<Employee>>(
+                future: Apis.get(context).getEmployees(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return RefreshProgressIndicator();
                   }
-                  ),
-       onRefresh: _refreshList,
-       );
-
-
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return SizedBox();
+                  }
+                  final employees = snapshot.data;
+                  return ListView.separated(
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      itemCount: employees?.length ?? 0,
+                      itemBuilder: (BuildContext context, int index) {
+                        Employee employee = employees[index];
+                        return Dismissible(
+                            key: Key("employees"),
+                            onDismissed: (direction) {
+                              Apis.get(context).deleteEmployee(employee);
+                              setState(() {
+                                employees.remove(employee);
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text('$employee dismissed')));
+                            },
+                            background: Container(color: Colors.red),
+                            child: GestureDetector(child:
+                            Row(children: [
+                              Expanded(child: CircleAvatar(
+                                backgroundImage:
+                                NetworkImage(
+                                  employee.imageFile ?? defultImg,
+                                ),
+                                radius: 60,
+                              )
+                              ),
+                              Expanded(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      Text('${employee.fn} ${employee.ln}'),
+                                      Text('Hired at: ${employee.hd}'),
+                                      Text('Work in: ${employee.de}'),
+                                      Text('Gain :${employee.sa}'),
+                                    ],))
+                            ],),
+                                onDoubleTap: () {
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (BuildContext context) {
+                                        return EmployeeDetail(employee);
+                                      }
+                                  ));
+                                }
+                            ));
+                      },
+                      separatorBuilder: (BuildContext context, int index) {
+                        return const Divider(
+                            color: Colors.black);
+                      }
+                  );
+                }),
+            onRefresh: _refreshList,
+            // )
+          ));
+    });
   }
 }
 

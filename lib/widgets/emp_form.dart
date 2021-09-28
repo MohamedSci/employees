@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:company_employees0/screens/employee_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 import 'package:company_employees0/Model/emp_model.dart';
@@ -12,18 +14,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class EmployeeForm extends StatefulWidget {
-   Employee currentEmployee;
-   bool isUpdating;
-   EmployeeForm({ this.currentEmployee , this.isUpdating});
   @override
   _EmployeeFormState createState() => _EmployeeFormState();
 }
 
 class _EmployeeFormState extends State<EmployeeForm> {
 final GlobalKey <FormState> _formKey = GlobalKey<FormState>();
-  Employee currentEmployee;
-  String _imageUrl;
-  File _imageFile;
+  String _imageUrl ="";
+  File _imageFile ;
 TextEditingController fnController = TextEditingController();
 TextEditingController lnController = TextEditingController();
 TextEditingController bdController = TextEditingController();
@@ -39,12 +37,6 @@ reset() {
   saController.text = "";
 }
 
-_onEmployeeUploaded(Employee employee) {
-  EmployeeNotifier employeeNotifier =
-                    Provider.of<EmployeeNotifier>(context, listen: false);
-  employeeNotifier.addEmployee(employee);
-  Navigator.pop(context);
-}
 
 _showImage() {
   if (_imageFile == null && _imageUrl == null) {
@@ -116,46 +108,35 @@ _getLocalImage() async {
 
   @override
   void initState() {
-    EmployeeNotifier employeeNotifier =
-    Provider.of<EmployeeNotifier>(context, listen: false);
-    if (employeeNotifier.currentEmployee != null){
-      currentEmployee = employeeNotifier.currentEmployee;
-      _imageUrl = employeeNotifier.currentEmployee.imageFile; }
-    else { currentEmployee = Employee(); }
+    BlocProvider.of<Apis>(context, listen: false);
+
     super.initState(); }
 
-_saveEmployee() {
+_saveEmployee() async {
+  // await FirebaseAuth.instance.signInAnonymously();
   print('saveFood Called');
   if (!_formKey.currentState.validate()) {
     return;
   }
   _formKey.currentState.save();
   print('form saved');
+  Employee currentEmployee = Employee(
+      fn: fnController.text , ln: lnController.text,
+      bd:bdController.text , hd: hdController.text,
+      de: deController.text , sa:saController.text );
 
-  uploadEmployeeAndImage(currentEmployee, widget.isUpdating, _imageFile, _onEmployeeUploaded);
-  Fluttertoast.showToast(
-      msg: "Awesome !",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.CENTER,
-      timeInSecForIosWeb: 1,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-      fontSize: 16.0
-  );
-}
+  Apis.get(context).
+  uploadEmployeeAndImage(currentEmployee, false, _imageFile);
+ }
 
   @override
   Widget build(BuildContext context) {
     return Form(
       key: _formKey,
       autovalidate: true,
-      child: Column(children: <Widget>[
-        Text(
-          widget.isUpdating ? "Update Employee" : "Add Employee",
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 30),
-        ),
-        const SizedBox(height: 16),
+      child:
+      Column(children: <Widget>[
+        const SizedBox(height: 6),
         _showImage(),
         const SizedBox(height: 16),
             Row(
@@ -175,8 +156,7 @@ _saveEmployee() {
               Expanded(
                 flex: 5,
                 child: TextFormField(
-                   onSaved: (newValue) =>
-                   currentEmployee.fn = newValue,
+                   controller: fnController,
                   decoration: const InputDecoration(labelText: ''),
                   keyboardType: TextInputType.text,
                   style: const TextStyle(
@@ -205,7 +185,7 @@ _saveEmployee() {
               Expanded(
                 flex: 5,
                 child: TextFormField(
-                  onSaved: (newValue) => currentEmployee.ln = newValue,
+                  controller: lnController,
                   decoration: const InputDecoration(labelText: ''),
                   keyboardType: TextInputType.text,
                   style: const TextStyle(
@@ -234,7 +214,7 @@ _saveEmployee() {
               Expanded(
                 flex: 5,
                 child: TextFormField(
-                  onSaved: (newValue) => currentEmployee.bd = newValue,
+                  controller: bdController,
                   decoration: const InputDecoration(labelText: ''),
                   keyboardType: TextInputType.text,
                   style: const TextStyle(
@@ -263,7 +243,7 @@ _saveEmployee() {
               Expanded(
                 flex: 5,
                 child: TextFormField(
-                  onSaved: (newValue) => currentEmployee.hd = newValue,
+                  controller: hdController,
                   decoration: const InputDecoration(labelText: ''),
                   keyboardType: TextInputType.text,
                   style: const TextStyle(
@@ -292,7 +272,7 @@ _saveEmployee() {
               Expanded(
                 flex: 5,
                 child: TextFormField(
-                  onSaved: (newValue) => currentEmployee.de = newValue,
+                  controller: deController,
                   decoration: const InputDecoration(labelText: ''),
                   keyboardType: TextInputType.text,
                   style: const TextStyle(
@@ -321,7 +301,7 @@ _saveEmployee() {
               Expanded(
                 flex: 5,
                 child: TextFormField(
-                  onSaved: (newValue) => currentEmployee.sa = newValue,
+                  controller: saController,
                   decoration: const InputDecoration(labelText: ''),
                   keyboardType: TextInputType.text,
                   style: const TextStyle(

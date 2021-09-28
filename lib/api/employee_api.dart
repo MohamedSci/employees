@@ -4,123 +4,195 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:company_employees0/Model/emp_model.dart';
 import 'package:company_employees0/Model/user_model.dart';
-import 'package:company_employees0/notifier/auth_notifier.dart';
-import 'package:company_employees0/notifier/employee_notifier.dart';
-import 'package:company_employees0/screens/employee_screen.dart';
+import 'package:company_employees0/api/states.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
+class Apis extends Cubit <ChangeState> {
+  Apis() : super(InitialState());
+  static Apis get(context) => BlocProvider.of(context);
 
-login(UserAccount account , AuthNotifier authNotifier) async {
-  UserCredential authResult = await FirebaseAuth.instance
-      .signInWithEmailAndPassword(email: account.mail, password: account.pass)
-      .catchError((error) => print(error.code));
-  if (authResult != null) {
-    User firebaseUser = authResult.user;
+  login(UserAccount account ) async {
+    UserCredential authResult = await FirebaseAuth.instance
+        .signInWithEmailAndPassword(email: account.mail, password: account.pass)
+        .catchError((error) => print(error.code));
+    if (authResult != null) {
+      User firebaseUser = authResult.user;
+      if (firebaseUser != null) {
+        print("Log In: $firebaseUser");
+        emit(SignInState());
+      }
+    }
+    Fluttertoast.showToast(
+        msg: "Signed in !",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.amberAccent,
+        textColor: Colors.white,
+        fontSize: 16.0
+    );
+  }
+
+  signup(UserAccount account) async {
+    UserCredential authResult = await FirebaseAuth.instance
+        .createUserWithEmailAndPassword(email: account.mail, password: account.pass)
+        .catchError((error) => print(error.code));
+    if (authResult != null) {
+      // UserUpdateInfo updateInfo = UserUpdateInfo();
+      // var displayName =
+      // updateInfo.displayName = user.displayName;
+      User user = authResult.user;
+      if (user != null) {
+        await FirebaseAuth.instance.currentUser.
+        updateProfile(displayName:user.displayName);
+        // await firebaseUser.updateProfile(updateInfo);
+        // await User.reload();
+        print("Sign up: $User");
+        User currentUser = FirebaseAuth.instance.currentUser;
+        emit(SignUpState());
+      }
+    }
+    Fluttertoast.showToast(
+        msg: "Registered !",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.amberAccent,
+        textColor: Colors.white,
+        fontSize: 16.0
+    );
+  }
+
+  signout() async {
+    await FirebaseAuth.instance.signOut().catchError((error) => print(error.code));
+    emit(SignOutState());
+    Fluttertoast.showToast(
+        msg: "Bye !",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.amberAccent,
+        textColor: Colors.white,
+        fontSize: 16.0
+    );
+  }
+
+
+  initializeCurrentUser() async {
+    User firebaseUser = await FirebaseAuth.instance.currentUser;
     if (firebaseUser != null) {
-      print("Log In: $firebaseUser");
-      authNotifier.setUser(firebaseUser);
+      print(firebaseUser);
+      emit(IntializeCurrentState());
     }
   }
-}
 
-signup(UserAccount account, AuthNotifier authNotifier) async {
-  UserCredential authResult = await FirebaseAuth.instance
-      .createUserWithEmailAndPassword(email: account.mail, password: account.pass)
-      .catchError((error) => print(error.code));
-  if (authResult != null) {
-    // UserUpdateInfo updateInfo = UserUpdateInfo();
-    // var displayName =
-    // updateInfo.displayName = user.displayName;
-    User user = authResult.user;
-    if (user != null) {
-      await FirebaseAuth.instance.currentUser.
-      updateProfile(displayName:user.displayName);
-      // await firebaseUser.updateProfile(updateInfo);
-      // await User.reload();
-      print("Sign up: $User");
-      User currentUser = FirebaseAuth.instance.currentUser;
-      authNotifier.setUser(currentUser);
-    }
-  }
-}
-
-signout(AuthNotifier authNotifier) async {
-  await FirebaseAuth.instance.signOut().catchError((error) => print(error.code));
-  authNotifier.setUser(null);
-}
-
-
-initializeCurrentUser(AuthNotifier authNotifier) async {
-  User firebaseUser = await FirebaseAuth.instance.currentUser;
-  if (firebaseUser != null) {
-    print(firebaseUser);
-    authNotifier.setUser(firebaseUser);
-  }
-}
-
-getEmployees(EmployeeNotifier employeeNotifier) async {
-  QuerySnapshot snapshot = await FirebaseFirestore.instance
-      .collection('employees')
-      // .orderBy("hire_date", descending: true)
-      .get();
-  List<Employee> _employeeList = [];
-  snapshot.docs.forEach((document) {
-    Employee employee = Employee.fromJSON(document.data());
-    _employeeList.add(employee);
-  });
-  employeeNotifier.employeeList = _employeeList;
-}
-
-uploadEmployeeAndImage(Employee employee, bool isUpdating, File localFile,
-    Function employeeUploaded) async {
-  if (localFile != null) {
-    print("uploading image");
-    var fileExtension = path.extension(localFile.path);
-    print(fileExtension);
-    var uuid = const Uuid().v4();
-    final Reference firebaseStorageRef =
-        FirebaseStorage.instance.ref().child('foods/images/$uuid$fileExtension');
-    await firebaseStorageRef.putFile(localFile).catchError((onError) {
-      print(onError);
-      return false;
+  Future <List<Employee>> getEmployees() async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection('employees')
+    // .orderBy("hire_date", descending: true)
+        .get();
+    List<Employee> _employeeList = [];
+    snapshot.docs.forEach((document) {
+      Employee employee = Employee.fromJSON(document.data());
+      _employeeList.add(employee);
     });
-    String url = await firebaseStorageRef.getDownloadURL();
-    print("download url: $url");
-    _uploadEmployee(employee, isUpdating, employeeUploaded, imageUrl: url);
-  } else {
-    print('...skipping image upload');
+    Fluttertoast.showToast(
+        msg: "Awesome !",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.amberAccent,
+        textColor: Colors.white,
+        fontSize: 16.0
+    );
+    return _employeeList;
   }
-}
 
-_uploadEmployee(Employee employee, bool isUpdating, Function employeeUploaded, {String imageUrl}) async {
-  CollectionReference foodRef = FirebaseFirestore.instance.collection('employees');
-  print(isUpdating);
-  if (imageUrl != null) { employee.imageFile = imageUrl; }
-  if (isUpdating == true) {
-    await foodRef.doc(employee.id).update(employee.toMap());
-    employeeUploaded(employee);
-    print('updated food with id: ${employee.id}');
-  } else {
-    // food.createdAt = Timestamp.now();
-    DocumentReference documentRef = await foodRef.add(employee.toMap());
-    employee.id = documentRef.id;
-    print('uploaded food successfully: ${employee.toString()}');
-    await documentRef.set(employee.toMap(), );
-    employeeUploaded(employee);
+  uploadEmployeeAndImage(Employee employee, bool isUpdating, File localFile) async {
+    if (localFile != null) {
+      print("uploading image");
+      var fileExtension = path.extension(localFile.path);
+      print(fileExtension);
+      var uuid = const Uuid().v4();
+      final Reference firebaseStorageRef =
+      FirebaseStorage.instance.ref().child('Employees/images/$uuid$fileExtension');
+      await firebaseStorageRef.putFile(localFile).catchError((onError) {
+        print(onError);
+        return false;
+      });
+      String url = await firebaseStorageRef.getDownloadURL();
+      print("download url: $url");
+      _uploadEmployee(employee, isUpdating, imageUrl: url);
+    } else {
+      print('...skipping image upload');
+    }
   }
-}
 
-deleteEmployee(Employee employee, Function employeeDeleted) async {
-  if (employee.imageFile != null) {
-    Reference storageReference =
-        FirebaseStorage.instance.refFromURL(employee.imageFile);
-    print(storageReference.fullPath);
-    await storageReference.delete();
-    print('image deleted');
+  _uploadEmployee(Employee employee, bool isUpdating, {String imageUrl}) async {
+    CollectionReference employeeRef = FirebaseFirestore.instance
+        .collection('employees');
+    print(isUpdating);
+    if (imageUrl != null) { employee.imageFile = imageUrl;
+    if (isUpdating == true) {
+      await employeeRef.doc(employee.id).update(employee.toMap());
+      print('updated employee with id: ${employee.id}');
+      emit(UpdateState());
+    } else {
+      DocumentReference documentRef = await employeeRef.add(employee.toMap());
+      employee.id = documentRef.id;
+      print('uploaded employee successfully: ${employee.toString()}');
+      await documentRef.set(employee.toMap(), );
+      emit(AddState());
+    }
+    }else{
+      if (isUpdating == true) {
+        await employeeRef.doc(employee.id).update(employee.toMap());
+        print('updated employee with id: ${employee.id}');
+        emit(UpdateState());
+      } else {
+        DocumentReference documentRef = await employeeRef.add(employee.toMap());
+        employee.id = documentRef.id;
+        print('uploaded employee successfully: ${employee.toString()}');
+        await documentRef.set(employee.toMap(), );
+        emit(AddState());
+      }
+    }
+    Fluttertoast.showToast(
+        msg: "Awesome !",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.amberAccent,
+        textColor: Colors.white,
+        fontSize: 16.0
+    );
   }
-  await FirebaseFirestore.instance.collection('Foods').doc(employee.id).delete();
-  employeeDeleted(employee);
-}
 
+  deleteEmployee(Employee employee,) async {
+    if (employee.imageFile != null) {
+      Reference storageReference =
+      FirebaseStorage.instance.refFromURL(employee.imageFile);
+      print(storageReference.fullPath);
+      await storageReference.delete();
+      print('image deleted');
+    }
+    await FirebaseFirestore.instance.collection('employees').doc(employee.id).delete();
+    emit(DeleteState());
+    Fluttertoast.showToast(
+        msg: "Awesome !",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.amberAccent,
+        textColor: Colors.white,
+        fontSize: 16.0
+    );
+  }
+
+
+}

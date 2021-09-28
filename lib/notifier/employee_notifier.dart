@@ -1,16 +1,13 @@
 import 'dart:collection';
 
 import 'package:company_employees0/Model/emp_model.dart';
-import 'package:company_employees0/screens/employee_screen.dart';
 import 'package:flutter/cupertino.dart';
 
 class EmployeeNotifier with ChangeNotifier {
   List<Employee> _employeeList = [];
   Employee _currentEmployee;
 
-
   UnmodifiableListView<Employee> get employeeList => UnmodifiableListView(_employeeList);
-
   Employee get currentEmployee => _currentEmployee;
 
   set employeeList(List<Employee> employeeList) {
@@ -22,6 +19,7 @@ class EmployeeNotifier with ChangeNotifier {
     _currentEmployee = employee;
     notifyListeners();
   }
+
 
   addEmployee(Employee employee) {
     _employeeList.insert(0, employee);

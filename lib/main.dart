@@ -1,10 +1,15 @@
 
 import 'package:company_employees0/screens/employee_screen.dart';
+import 'package:company_employees0/screens/log_in.dart';
 import 'package:company_employees0/screens/login.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 
+import 'api/employee_api.dart';
+import 'api/states.dart';
 import 'notifier/auth_notifier.dart';
 import 'notifier/employee_notifier.dart';
 
@@ -12,14 +17,10 @@ import 'notifier/employee_notifier.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (context) => AuthNotifier(),),
-        ChangeNotifierProvider(create: (context) => EmployeeNotifier(),)
-                ],
-      child: const MyApp(),
-                  ),
-        );
+        BlocProvider(create: (context) => Apis(),
+        child: const MyApp(),
+        ),
+                  );
 }
 
 class MyApp extends StatelessWidget {
@@ -48,9 +49,16 @@ class MyApp extends StatelessWidget {
                       primaryColor:  Colors.green,
                       colorScheme: ColorScheme.fromSwatch()
                           .copyWith(secondary: Colors.white)),
-                  home: Consumer<AuthNotifier>(
-                    builder: (context, notifier, child) {
-                      return notifier.user != null ?  EmployeeScreen() :  EmployeeScreen();
+                  home: BlocConsumer<Apis, ChangeState>(
+                    listener: (context, state) {
+                      print(state);
+                    },
+                    builder: (context, state) {
+                      print(state);
+                      print(" bloc Consumer works");
+
+                      return FirebaseAuth.instance.currentUser  != null ?
+                      EmployeeScreen() :  LogIn();
                     },
                   ),));
         }

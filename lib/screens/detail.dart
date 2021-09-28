@@ -2,25 +2,21 @@
 import 'package:company_employees0/Model/emp_model.dart';
 import 'package:company_employees0/api/employee_api.dart';
 import 'package:company_employees0/notifier/employee_notifier.dart';
+import 'package:company_employees0/widgets/emp_dialoge.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'employee_screen.dart';
 
 
 class EmployeeDetail extends StatelessWidget {
+Employee _employee;
+EmployeeDetail(this._employee);
   @override
   Widget build(BuildContext context) {
-    EmployeeNotifier employeeNotifier = Provider.of<EmployeeNotifier>(context);
-
-    _onEmployeeDeleted(Employee employee) {
-      Navigator.pop(context);
-      employeeNotifier.deleteEmployee(employee);
-    }
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(employeeNotifier.currentEmployee.fn),
+        backgroundColor: Colors.green,
+        title: Text(_employee.de),
       ),
       body: SingleChildScrollView(
         child: Center(
@@ -28,37 +24,48 @@ class EmployeeDetail extends StatelessWidget {
             child: Column(
               children: <Widget>[
                 Image.network(
-                  employeeNotifier.currentEmployee.imageFile != null
-                      ? employeeNotifier.currentEmployee.imageFile :
+                  _employee.imageFile != null
+                      ?_employee.imageFile :
                 "https://p0.pxfuel.com/preview/36/911/727/businessman-man-afraid-angry.jpg",
+                  errorBuilder: (BuildContext context, Object exception, StackTrace stackTrace) {
+                    return Text('Loading...');
+                  },
                   width: MediaQuery.of(context).size.width,
                   height: 250,
                   fit: BoxFit.fitWidth,
                 ),
                 SizedBox(height: 24),
                 Text(
-                  '${employeeNotifier.currentEmployee.fn} ${employeeNotifier.currentEmployee.ln}',
+                  '${_employee.fn} ${_employee.ln}',
+                  style: TextStyle(
+                    fontSize: 32,
+                  ),
+                ),
+                SizedBox(width: 10,),
+                Text(
+                  '${_employee.ln}',
                   style: TextStyle(
                     fontSize: 28,
                   ),
                 ),
+                SizedBox(width: 10,),
                 Text(
-                  'Department: ${employeeNotifier.currentEmployee.de}',
+                  'Department: ${_employee.de}',
                   style: TextStyle(fontSize: 18, fontStyle: FontStyle.italic),
                 ),
                 SizedBox(height: 10),
                 Text(
-                  'Hired at: ${employeeNotifier.currentEmployee.hd}',
+                  'Hired at: ${_employee.hd}',
                   style: TextStyle(fontSize: 18, fontStyle: FontStyle.italic),
                 ),
                 SizedBox(height: 10),
                 Text(
-                  'Born at: ${employeeNotifier.currentEmployee.bd}',
+                  'Born at: ${_employee.bd}',
                   style: TextStyle(fontSize: 18, fontStyle: FontStyle.italic),
                 ),
                 SizedBox(height: 10),
                 Text(
-                  'Gain monthly: ${employeeNotifier.currentEmployee.sa}',
+                  'Gain monthly: ${_employee.sa}',
                   style: TextStyle(fontSize: 18, fontStyle: FontStyle.italic),
                 ),
                 SizedBox(height: 10),
@@ -95,20 +102,22 @@ class EmployeeDetail extends StatelessWidget {
             heroTag: 'button1',
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (BuildContext context) {
-                  return EmployeeScreen(
-                    isUpdating: true,
-                  );
-                }),
+                MaterialPageRoute(
+                      builder: (BuildContext context) =>
+                    EmployeeDialoge(_employee),
+                ),
               );
             },
             child: Icon(Icons.edit),
+            backgroundColor: Colors.amber,
             foregroundColor: Colors.white,
           ),
           SizedBox(height: 20),
           FloatingActionButton(
             heroTag: 'button2',
-            onPressed: () => deleteEmployee(employeeNotifier.currentEmployee, _onEmployeeDeleted),
+            onPressed: ()  {
+              Apis.get(context).deleteEmployee(_employee);
+                            Navigator.pop(context);},
             child: Icon(Icons.delete),
             backgroundColor: Colors.red,
             foregroundColor: Colors.white,
