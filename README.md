@@ -2,15 +2,20 @@
 
 A new Flutter project.
 
-## Getting Started
+An awesome Flutter project in hoow to Use Firebase Auth , Firestore and Storage 
 
-This project is a starting point for a Flutter application.
+in this app users can login  register & login
 
-A few resources to get you started if this is your first Flutter project:
+insert new data and images in a Form Widget
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+view Data in List view screen
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+delete an item when slide it 
+
+view more data about item when double clicked it
+
+update data and image in Alert dialoge
+
+delete data with a Floating action button
+
+created by Mohamed Saeed
