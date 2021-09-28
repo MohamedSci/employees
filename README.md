@@ -2,7 +2,7 @@
 
 A new Flutter project.
 
-An awesome Flutter project in hoow to Use Firebase Auth , Firestore and Storage 
+An awesome Flutter project in hoow to Use Firebase Auth , Firestore , Storage and State management
 
 in this app users can login  register & login
 
